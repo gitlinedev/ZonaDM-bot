@@ -1,2 +1,5 @@
 # ZonaDM-bot
-VKBot
+
+
+Server - ZonaAPI.php (Type GET)
+
