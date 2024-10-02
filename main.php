@@ -16,10 +16,6 @@ $vk = vk_api::create(VK_KEY, VERSION)->setConfirm(ACCESS_KEY);
 $permision = 403;
 //=====================================[Buttons VK]==================================================
 $btn_1 = $vk->buttonText('Привязать аккаунт', 'blue', ['command' => 'btn_1']);
-$btn_2 = $vk->buttonText('Отписаться от рассылки', 'white', ['command' => 'btn_2']);
-
-$btn_3 = $vk->buttonText('Да', 'green', ['command' => 'btn_3']);
-$btn_4 = $vk->buttonText('Нет', 'red', ['command' => 'btn_4']);
 //============================================================================================
 $host_global = "185.253.34.52";
 $username_global = "gs183914";
@@ -44,8 +40,6 @@ $vk->initVars($peer_id, $message, $payload, $vk_id, $type, $data);
 $peer_id = $data->object->peer_id;// ChatID
 $message = $data->object->text; // Message
 
-/*$ref = $data->object->ref; // ref
-$ref_source = $data->object->ref_source; // ref_source */
 
 // Main Code
 if ($data->type == 'message_new') // Check New Message
@@ -65,15 +59,16 @@ if ($data->type == 'message_new') // Check New Message
     if($message == '/i') SendInformation($peer_id, $vk, $vk_id);
     if($params_message[0] == '/get') CheckPlayer($peer_id, $params_message, $vk, $permision, $db_global);
     if($params_message[0] == '/ma') MultiAccounts($peer_id, $params_message, $vk, $permision, $db_global);
+    if($params_message[0] == '/unadmin') RemoveAdmin($peer_id, $params_message, $vk, $permision, $db_global);
     //====================
     
-    if (isset($data->object->payload)) $payload = json_decode($data->object->payload, True);
+    /*if (isset($data->object->payload)) $payload = json_decode($data->object->payload, True);
     else $payload = null;
     $payload = $payload['command'];
     
     if($peer_id == $vk_id) 
     {
-        /*if(in_array(mb_strtolower($message), ['начать', 'старт', 'меню', 'menu', 'start'], true)) 
+        if(in_array(mb_strtolower($message), ['начать', 'старт', 'меню', 'menu', 'start'], true)) 
         {
             $check_reg = $db_global->query("SELECT * FROM players WHERE vk = '{$vk_id}' AND peer_id = '$peer_id'");
             $row = $check_reg->fetch_assoc();
@@ -95,57 +90,18 @@ if ($data->type == 'message_new') // Check New Message
             }
         }
 
-        CheckReferal($peer_id, $vk, $ref, $ref_source, $vk_id, $db_global);
-
         if ($payload == 'btn_1') 
         {
-            $check_have = $db_global->query("SELECT * FROM ucp_verification WHERE from_vk = '$vk_id'");
-            $row = $check_have->fetch_assoc();
-            
-            if ($row && $row['timestamp'] + 300 > time()) {
-                return $vk->sendMessage($peer_id, "Произошла ошибка (#904)");
-            }
-            
-            $check_reg = $db_global->query("SELECT * FROM players WHERE vk = '$vk_id' AND peer_id = '$peer_id'");
-            $rows = $check_reg->fetch_assoc();
-            
-            if (!$rows) {
-                $vk->sendMessage($peer_id, "Произошла ошибка (#304)");
-                $db_global->query("INSERT INTO `players`(`vk`, `peer_id`, `ref`, `name`) VALUES ('$vk_id', '$peer_id', 'NULL', 'NULL')"); 
-                return;
-            }
-            
-            $check = $db_global->query("SELECT * FROM accounts WHERE Name = '{$rows['name']}'");
-            $row = $check->fetch_assoc();
-        
-            if (!$row) {
-                return $vk->sendMessage($peer_id, "Произошла ошибка (#204)");
-            }
-        
-            if ($row['VkontakteID'] != 0) {
-                return $vk->sendMessage($peer_id, "К этому аккаунту уже привязан профиль ВКонтакте");
-            }
-        
-            $check_serv = $db_global->query("SELECT * FROM accounts WHERE VkontakteID = '{$vk_id}'");
-            $check = $check_serv->fetch_assoc();
-        
-            if ($check && $check['VkontakteID'] == $vk_id) {
-                return $vk->sendMessage($peer_id, "Этот профиль ВКонтакте уже привязан к аккаунту с логином {$check['Name']}");  
-            }
-            
-            $code = md5($rows['name']);
-            $timestamp = time();
-            
-            $db_global->query("DELETE FROM `ucp_verification` WHERE from_vk = '$vk_id'"); 
-            
-            $db_global->query("INSERT INTO `ucp_verification`(`from_vk`, `timestamp`, `name`, `data`, `md5`) VALUES ('$vk_id', '$timestamp', '{$rows['name']}', '$vk_id', '$code')"); 
-        
-            return $vk->sendMessage($peer_id, "Отлично! Чтобы завершить привязку профиля, перейдите по ссылке:\nhttps://s-project.xyz/vk/{$code}");  
-        }*/
-    }
+            $vk->sendMessage($peer_id, "Отлично!");  
+        }
+    }*/
 }
 
 //========================= [ FUNCTION ] =========================\\
+function RemoveAdmin($peer_id, $params_message, $vk, $permision, $db_global)
+{
+    //дописать
+}
 function MultiAccounts($peer_id, $params_message, $vk, $permision, $db_global)
 {
     if($peer_id != ADMIN_CHAT) return $vk->sendMessage($peer_id, "Произошла ошибка (#$permision)");
