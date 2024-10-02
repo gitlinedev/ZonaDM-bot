@@ -60,35 +60,20 @@ if ($data->type == 'message_new') // Check New Message
     if($params_message[0] == '/get') CheckPlayer($peer_id, $params_message, $vk, $permision, $db_global);
     if($params_message[0] == '/ma') MultiAccounts($peer_id, $params_message, $vk, $permision, $db_global);
     if($params_message[0] == '/unadmin') RemoveAdmin($peer_id, $params_message, $vk, $permision, $db_global);
+    if($params_message[0] == '/logs') PlayerLogs($peer_id, $params_message, $vk, $permision, $db_global);
     //====================
     
-    /*if (isset($data->object->payload)) $payload = json_decode($data->object->payload, True);
-    else $payload = null;
-    $payload = $payload['command'];
-    
+    /*
     if($peer_id == $vk_id) 
     {
         if(in_array(mb_strtolower($message), ['начать', 'старт', 'меню', 'menu', 'start'], true)) 
         {
-            $check_reg = $db_global->query("SELECT * FROM players WHERE vk = '{$vk_id}' AND peer_id = '$peer_id'");
-            $row = $check_reg->fetch_assoc();
-            
-            if($row) 
-            {
-                if($peer_id == $vk_id) $vk->sendButton($peer_id, "", [[$btn_1, $btn_2]]);
-                $db_global->query("UPDATE `players` SET `ref`='$ref',`name`='$uid' WHERE vk = '$vk_id' AND peer_id = '$peer_id'"); 
-
-                return 1;
-            }
-            else 
-            {
-                if($peer_id == $vk_id) $vk->sendButton($peer_id, "", [[$btn_1, $btn_2]]);
-
-                $db_global->query("INSERT INTO `players`(`vk`, `peer_id`, `ref`, `name`) VALUES ($vk_id, '$peer_id', '$ref', '$uid')"); 
-
-                return 1;
-            }
+            $vk->sendMessage($peer_id, "Отлично!");  
         }
+        
+        if (isset($data->object->payload)) $payload = json_decode($data->object->payload, True);
+        else $payload = null;
+        $payload = $payload['command'];
 
         if ($payload == 'btn_1') 
         {
@@ -101,6 +86,31 @@ if ($data->type == 'message_new') // Check New Message
 function RemoveAdmin($peer_id, $params_message, $vk, $permision, $db_global)
 {
     //дописать
+}
+function PlayerLogs($peer_id, $params_message, $vk, $permision, $db_global)
+{
+    if($peer_id != ADMIN_CHAT) return $vk->sendMessage($peer_id, "Произошла ошибка (#$permision)");
+    if($params_message[1] == '') return $vk->sendMessage($peer_id, "Используйте: /logs Ivan_Ivanov");
+
+    $serach_sql = $db_global->query("SELECT id FROM accounts WHERE name = '{$params_message[1]}'");
+    $id = $serach_sql->fetch_assoc()['id'];
+
+    $logs_sql = $db_global->query("SELECT * FROM logs WHERE userid = '{$id}' ORDER BY id DESC LIMIT 15");
+
+    $count = $logs_sql->num_rows;   
+
+    $$count_max = 15;
+    if($count < 15) $count_max = $count;
+
+    if($count == 0) return $vk->sendMessage($peer_id, "В базе данных нет записей действий от этого игрока.");
+
+    $info = "";
+
+    while ($row = $logs_sql->fetch_assoc()) 
+    {
+        $info .= "— {$row['log']} (📆 дата: {$row['time']});\n";
+    }
+    return $vk->sendMessage($peer_id, "📋 Список последних $count_max действий по запросу {$params_message[1]}:\n\n$info\n\nВсего -> $count строк(-а, -и).");
 }
 function MultiAccounts($peer_id, $params_message, $vk, $permision, $db_global)
 {
@@ -121,7 +131,7 @@ function MultiAccounts($peer_id, $params_message, $vk, $permision, $db_global)
 
     while ($row = $sip_sql->fetch_assoc()) 
     {
-        $info .= "— {$row['name']} (дата регистрации: {$row['RegDate']});\n";
+        $info .= "— {$row['name']} (📆 дата регистрации: {$row['RegDate']});\n";
     }
     return $vk->sendMessage($peer_id, "📋 Список возможных мульти-аккаунтов по запросу {$params_message[1]}:\n\n$info\n\nВсего -> $count аккаунт(-а, -ов).");
 }
@@ -136,6 +146,7 @@ function CheckPlayer($peer_id, $params_message, $vk, $permision, $db_global)
     $row = $serach_sql->fetch_assoc();
     
     $info = "";
+    $vip = "";
     $hash = "";
     $status = "";
 
@@ -150,19 +161,20 @@ function CheckPlayer($peer_id, $params_message, $vk, $permision, $db_global)
             break;
     }
 
-    $info = "📄 Основная информация по запросу '{$params_message[1]}':
-            Никнейм — {$params_message[1]} ($status)
-            Дата регистрации — {$row['RegDate']}
-            Дата авторизации — {$row['LastLogin']}
-            IP-адрес — {$row['ip']}
-            Хэш — $hash
+    switch($row['vip']) {
+        case 0:
+            $vip = "нет";
+            break;
+        case 1:
+            $ts = $row['VipFinish'];
 
-            📚 Дополнительная информация по запросу '{$params_message[1]}':
-            Деньги — {$row['money']}$
-            Донат-валюта — {$row['donate_money']}$
-            Уровень — {$row['level']}LVL
-            Одежда — {$row['skin']}ID
-            Статус VIP — есть";
+            $date = date('d.m.Y', $ts);
+
+            $vip = "есть (закончится: {$date})";
+            break;
+    }
+
+    $info = "📄 Основная информация по запросу '{$params_message[1]}':\nНикнейм — {$params_message[1]} ($status)\nДата регистрации — {$row['RegDate']}\nДата авторизации — {$row['LastLogin']}\nIP-адрес — {$row['ip']}\nХэш — $hash\n\n📚 Дополнительная информация по запросу '{$params_message[1]}':\nДеньги — {$row['money']}$\nДонат-валюта — {$row['donate_money']}$\nУровень — {$row['level']}LVL\nОдежда — {$row['skin']}ID\nСтатус VIP — $vip";
 
     return $vk->sendMessage($peer_id, $info);
 }
@@ -173,7 +185,7 @@ function SendInformation($peer_id, $vk, $vk_id)
 }
 function Leaders($peer_id, $db_global, $vk)
 {
-    $is_leader = "";
+    $leaders_list = "";
     $leaders_sql = $db_global->query("SELECT * FROM organizations1");
 
     while ($row = $leaders_sql->fetch_assoc()) 
