@@ -54,22 +54,43 @@ if ($data->type == 'message_new') // Check New Message
         $query = new SampQueryAPI('5.39.108.55', '1789'); 
         $serverInfo = $query->getInfo(); 
 
-        $vk->sendMessage($peer_id, "
-        📊 Текущий онлайн сервера: {$serverInfo['players']} из 250 (1 мс)");
+        $vk->sendMessage($peer_id, "📊 Текущий онлайн сервера: {$serverInfo['players']} из 250 (1 мс)");
 	}
-	if($message == '/leaders' or $message == '/лидеры') Leaders($peer_id, $db_global, $vk);
-    if($message == '/i') SendInformation($peer_id, $vk, $vk_id);
-    if($params_message[0] == '/get') CheckPlayer($peer_id, $params_message, $vk, $permision, $db_global);
-    if($params_message[0] == '/ma') MultiAccounts($peer_id, $params_message, $vk, $permision, $db_global);
-    if($params_message[0] == '/unadmin') RemoveAdmin($vk_id, $peer_id, $params_message, $vk, $permision, $db_global);
-    if($params_message[0] == '/logs') PlayerLogs($peer_id, $params_message, $vk, $permision, $db_global);
-    if($params_message[0] == '/giveadmin') GiveAdmin($vk_id, $peer_id, $params_message, $vk, $permision, $db_global);
+    if($message == '/players' or $message == '/игроки')
+	{
+        $query = new SampQueryAPI('5.39.108.55', '1789'); 
+        $aPlayers = $query->getDetailedPlayers(); 
+        $serverInfo = $query->getInfo(); 
+        
+        $players = "";
+        
+        if($serverInfo['players'] >= 1)
+        {
+            foreach($aPlayers as $sValue)
+            {
+                $players .= "— {$sValue['nickname']}[{$sValue['playerid']}] • Убийств {$sValue['score']} • Пинг {$sValue['ping']} ms";
+            }
+    
+            return $vk->sendMessage($peer_id, "💫 Список игроков (всего — {$serverInfo['players']}):\n\n$players");
+        }
+        else
+        {
+            return $vk->sendMessage($peer_id, "😓 На данный момент нет игроков на сервере.");
+        }
+	}
+	if($message == '/leaders' or $message == '/лидеры') return Leaders($peer_id, $db_global, $vk);
+    if($message == '/i') return SendInformation($peer_id, $vk, $vk_id);
+    if($params_message[0] == '/get') return CheckPlayer($peer_id, $params_message, $vk, $permision, $db_global);
+    if($params_message[0] == '/ma') return MultiAccounts($peer_id, $params_message, $vk, $permision, $db_global);
+    if($params_message[0] == '/unadmin') return RemoveAdmin($vk_id, $peer_id, $params_message, $vk, $permision, $db_global);
+    if($params_message[0] == '/logs') return PlayerLogs($peer_id, $params_message, $vk, $permision, $db_global);
+    if($params_message[0] == '/giveadmin') return GiveAdmin($vk_id, $peer_id, $params_message, $vk, $permision, $db_global);
     //============================================================================================================================================\\
     if($peer_id == $vk_id) 
     {
         if(in_array(mb_strtolower($message), ['начать', 'старт', 'меню', 'menu', 'start'], true)) 
         {
-            $vk->sendButton($peer_id, "✉️", [[$btn_1]]);
+            return $vk->sendButton($peer_id, "✉️", [[$btn_1]]);
         }
         //======================= [ Buttons ] =======================\\
         if (isset($data->object->payload)) $btn = json_decode($data->object->payload, True);
@@ -78,7 +99,7 @@ if ($data->type == 'message_new') // Check New Message
 
         if ($btn == 'btn_1') 
         {
-            $vk->sendMessage($peer_id, "В разработке!");  
+            return $vk->sendMessage($peer_id, "В разработке!");  
         }
     }
 }
@@ -278,7 +299,7 @@ function CheckPlayer($peer_id, $params_message, $vk, $permision, $db_global)
             break;
     }
 
-    $info = "📄 Основная информация по запросу '{$params_message[1]}':\nНикнейм — {$params_message[1]} [ $status ]\nДата регистрации — {$row['RegDate']}\nДата авторизации — {$row['LastLogin']}\nIP-адрес — {$row['ip']}\nХэш — $hash\n\n📚 Дополнительная информация по запросу '{$params_message[1]}':\nДеньги — {$row['money']}$\nДонат-валюта — {$row['donate_money']}$\nУровень — {$row['level']}LVL\nОдежда — {$row['skin']}ID\nСтатус VIP — $vip";
+    $info = "📄 Основная информация по запросу '{$params_message[1]}':\nНикнейм — {$params_message[1]} [ $status ]\nДата регистрации — {$row['RegDate']}\nДата авторизации — {$row['LastLogin']}\nIP-адрес — {$row['ip']}\nХэш — $hash\n\n📚 Дополнительная информация по запросу '{$params_message[1]}':\nДеньги — {$row['money']}$\nДонат-валюта — {$row['donate_money']}$\nУбийств — {$row['level']}LVL\nОдежда — {$row['skin']}ID\nСтатус VIP — $vip";
 
     return $vk->sendMessage($peer_id, $info);
 }
