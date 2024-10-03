@@ -1,7 +1,7 @@
 <?php
 
 require_once('simplevk-master/autoload.php');
-require_once('SampQueryAPI.php'); 
+require_once('SAMPApi/SampQueryAPI.php'); 
 require_once('vendor/autoload.php');
 
 use DigitalStar\vk_api\VK_api as vk_api; // vk_api
@@ -16,11 +16,14 @@ $vk = vk_api::create(VK_KEY, VERSION)->setConfirm(ACCESS_KEY);
 $permision = 403;
 //=====================================[Buttons VK]==================================================
 $btn_1 = $vk->buttonText('Привязать аккаунт', 'blue', ['command' => 'btn_1']);
+
+$btn_2 = $vk->buttonText('Да', 'green', ['command' => 'btn_2']);
+$btn_3 = $vk->buttonText('Нет', 'red', ['command' => 'btn_3']);
 //============================================================================================
-$host_global = "185.253.34.52";
-$username_global = "gs183914";
-$password_global = "hXsMmE34zqUt";
-$database_global = "gs183914";
+$host_global = "164.132.206.179";
+$username_global = "gs272375";
+$password_global = "6rfBaTQDDs8P";
+$database_global = "gs272375";
 
 const ADMIN_CHAT = 2000000049;
 //=================== [ MYSQL CONNECT ] =========== \\
@@ -40,7 +43,6 @@ $vk->initVars($peer_id, $message, $payload, $vk_id, $type, $data);
 $peer_id = $data->object->peer_id;// ChatID
 $message = $data->object->text; // Message
 
-
 // Main Code
 if ($data->type == 'message_new') // Check New Message
 {
@@ -49,43 +51,145 @@ if ($data->type == 'message_new') // Check New Message
     //======================== [ CMD ] ======================\\
 	if($message == '/online' or $message == '/онлайн')
 	{
-        $query = new SampQueryAPI('185.253.34.52', '1213'); 
+        $query = new SampQueryAPI('5.39.108.55', '1789'); 
         $serverInfo = $query->getInfo(); 
 
         $vk->sendMessage($peer_id, "
-        📊 Текущий онлайн сервера: {$serverInfo['players']} из {$serverInfo['maxplayers']} (1 мс)");
+        📊 Текущий онлайн сервера: {$serverInfo['players']} из 250 (1 мс)");
 	}
 	if($message == '/leaders' or $message == '/лидеры') Leaders($peer_id, $db_global, $vk);
     if($message == '/i') SendInformation($peer_id, $vk, $vk_id);
     if($params_message[0] == '/get') CheckPlayer($peer_id, $params_message, $vk, $permision, $db_global);
     if($params_message[0] == '/ma') MultiAccounts($peer_id, $params_message, $vk, $permision, $db_global);
-    if($params_message[0] == '/unadmin') RemoveAdmin($peer_id, $params_message, $vk, $permision, $db_global);
+    if($params_message[0] == '/unadmin') RemoveAdmin($vk_id, $peer_id, $params_message, $vk, $permision, $db_global);
     if($params_message[0] == '/logs') PlayerLogs($peer_id, $params_message, $vk, $permision, $db_global);
-    //====================
-    
-    /*
+    if($params_message[0] == '/giveadmin') GiveAdmin($vk_id, $peer_id, $params_message, $vk, $permision, $db_global);
+    //============================================================================================================================================\\
     if($peer_id == $vk_id) 
     {
         if(in_array(mb_strtolower($message), ['начать', 'старт', 'меню', 'menu', 'start'], true)) 
         {
-            $vk->sendMessage($peer_id, "Отлично!");  
+            $vk->sendButton($peer_id, "✉️", [[$btn_1]]);
         }
-        
-        if (isset($data->object->payload)) $payload = json_decode($data->object->payload, True);
-        else $payload = null;
-        $payload = $payload['command'];
+        //======================= [ Buttons ] =======================\\
+        if (isset($data->object->payload)) $btn = json_decode($data->object->payload, True);
+        else $btn = null;
+        $btn = $btn['command'];
 
-        if ($payload == 'btn_1') 
+        if ($btn == 'btn_1') 
         {
-            $vk->sendMessage($peer_id, "Отлично!");  
+            $vk->sendMessage($peer_id, "В разработке!");  
         }
-    }*/
+    }
 }
 
 //========================= [ FUNCTION ] =========================\\
-function RemoveAdmin($peer_id, $params_message, $vk, $permision, $db_global)
+function CheckAdmin($vk_id, $db_global, $type, $player = null)
 {
-    //дописать
+    if($type == 0)
+    {
+        $serach_sql = $db_global->query("SELECT name FROM accounts WHERE vk = '{$vk_id}' LIMIT 1");
+        $name = $serach_sql->fetch_assoc()['name'];
+
+        $admin_sql = $db_global->query("SELECT level FROM admins WHERE name = '{$name}' LIMIT 1");
+
+        if($admin_sql->num_rows != 0) $level = $admin_sql->fetch_assoc()['level'];
+        else $level = 0;
+
+        return $level;
+    }
+    else
+    {
+        $admin_sql = $db_global->query("SELECT level FROM admins WHERE name = '{$player}' LIMIT 1");
+
+        if($admin_sql->num_rows != 0) $level = $admin_sql->fetch_assoc()['level'];
+        else $level = 0;
+
+        return $level;
+    }
+}
+function GetVKID($db_global, $name)
+{
+    $serach_sql = $db_global->query("SELECT vk FROM accounts WHERE name = '{$name}' LIMIT 1");
+
+    if($serach_sql->num_rows != 0) $vk = $serach_sql->fetch_assoc()['vk'];
+    else $vk = -1;
+
+    return $vk;
+}
+function CheckValidAccount($db_global, $name)
+{
+    $search_sql = $db_global->query("SELECT id FROM accounts WHERE name = '{$name}' LIMIT 1");
+
+    return $search_sql->num_rows > 0;
+}
+function SendActions($db_global, $action, $from, $player, $value, $reason = null)
+{
+    $db_global->query("INSERT INTO `vk_actions`(`action`, `from`, `player`, `value`, `reason`, `date`) VALUES ('$action','$from','$player','$value','$reason', NOW())");
+}
+function GiveAdmin($vk_id, $peer_id, $params_message, $vk, $permision, $db_global)
+{
+    if($peer_id != ADMIN_CHAT) return $vk->sendMessage($peer_id, "Произошла ошибка (#$permision)");
+
+    $admin_lvl = CheckAdmin($vk_id, $db_global, 0);
+    
+    if($admin_lvl <= 0 or $admin_lvl < 7) return $vk->sendMessage($peer_id, "Произошла ошибка (#$permision)");
+    if($params_message[1] == '') return $vk->sendMessage($peer_id, "Используйте: /giveadmin Ivan_Ivanov lvl (1-7)");
+    if($params_message[2] == '') return $vk->sendMessage($peer_id, "Используйте: /giveadmin Ivan_Ivanov lvl (1-7)");
+
+    if(CheckValidAccount($db_global, $params_message[1]) == false) return $vk->sendMessage($peer_id, "Аккаунт не найден в базе данных."); 
+
+    $second_lvl = CheckAdmin($vk_id, $db_global, 1, $params_message[1]);
+
+    if($second_lvl == $params_message[2] or $second_lvl >= 7) return $vk->sendMessage($peer_id, "У данного игрока уже имеется этот уровень админ-прав или выше."); 
+    
+    if($second_lvl == 0)
+    {
+        $db_global->query("INSERT INTO `admins`(`name`, `level`,  `name_giver`) VALUES ('{$params_message[1]}', '{$params_message[2]}', 'VKBot ($vk_id)')");
+
+        SendActions($db_global, 2, $vk_id, $params_message[1], $params_message[2], "giveadmin bot (insert)");
+
+        $vk->sendMessage($peer_id, "Игрок {$params_message[1]} был назначен на {$params_message[2]} уровень администратора"); 
+    }
+    else
+    {
+        $db_global->query("UPDATE `admins` SET `level`='{$params_message[2]}' WHERE `name`='{$params_message[1]}'");
+
+        SendActions($db_global, 2, $vk_id, $params_message[1], $params_message[2], "giveadmin bot (update)");
+
+        $vk->sendMessage($peer_id, "Администратор {$params_message[1]} был повышен/понижен на {$params_message[2]} уровень администратора"); 
+    }
+    return 1;
+}
+function RemoveAdmin($vk_id, $peer_id, $params_message, $vk, $permision, $db_global)
+{
+    if($peer_id != ADMIN_CHAT) return $vk->sendMessage($peer_id, "Произошла ошибка (#$permision)");
+
+    $admin_lvl = CheckAdmin($vk_id, $db_global, 0);
+    
+    if($admin_lvl <= 0 or $admin_lvl < 7) return $vk->sendMessage($peer_id, "Произошла ошибка (#$permision)");
+    if($params_message[1] == '') return $vk->sendMessage($peer_id, "Используйте: /unadmin Ivan_Ivanov");
+
+    $second_lvl = CheckAdmin($vk_id, $db_global, 1, $params_message[1]);
+
+    if($second_lvl <= 0) return $vk->sendMessage($peer_id, "{$params_message[1]} не является администратором");
+    if($second_lvl >= $admin_lvl) return $vk->sendMessage($peer_id, "Ваши права не позволяют снять администратора с таким же или более высоким уровнем доступа.");
+
+    $db_global->query("DELETE FROM `admins` WHERE name = '{$params_message[1]}'");
+
+    SendActions($db_global, 1, $vk_id, $params_message[1], 0, "unadmin bot");
+
+    $id = GetVKID($db_global, $params_message[1]);
+    if($id != -1) 
+    {
+        $userInfo = $vk->request("users.get", ["user_ids" => $id]);
+        $vk->sendMessage($peer_id, "Внимание: пользователь @id$id({$userInfo[0]['first_name']}) не является администратором.");
+                
+        $chat_id = $peer_id - 2000000000;
+        $vk->request('messages.removeChatUser', ['chat_id' => $chat_id, 'member_id' => $id]);
+    }
+
+    return $vk->sendMessage($peer_id, "Администратор {$params_message[1]} был снят через бота ВКонтакте.");
 }
 function PlayerLogs($peer_id, $params_message, $vk, $permision, $db_global)
 {
@@ -157,7 +261,7 @@ function CheckPlayer($peer_id, $params_message, $vk, $permision, $db_global)
             $status = "Не в сети";
             break;
         case 1:
-            $status = "В сети (ID: {$row['serverID']}";
+            $status = "💡 В сети (ID: {$row['serverID']})";
             break;
     }
 
@@ -174,7 +278,7 @@ function CheckPlayer($peer_id, $params_message, $vk, $permision, $db_global)
             break;
     }
 
-    $info = "📄 Основная информация по запросу '{$params_message[1]}':\nНикнейм — {$params_message[1]} ($status)\nДата регистрации — {$row['RegDate']}\nДата авторизации — {$row['LastLogin']}\nIP-адрес — {$row['ip']}\nХэш — $hash\n\n📚 Дополнительная информация по запросу '{$params_message[1]}':\nДеньги — {$row['money']}$\nДонат-валюта — {$row['donate_money']}$\nУровень — {$row['level']}LVL\nОдежда — {$row['skin']}ID\nСтатус VIP — $vip";
+    $info = "📄 Основная информация по запросу '{$params_message[1]}':\nНикнейм — {$params_message[1]} [ $status ]\nДата регистрации — {$row['RegDate']}\nДата авторизации — {$row['LastLogin']}\nIP-адрес — {$row['ip']}\nХэш — $hash\n\n📚 Дополнительная информация по запросу '{$params_message[1]}':\nДеньги — {$row['money']}$\nДонат-валюта — {$row['donate_money']}$\nУровень — {$row['level']}LVL\nОдежда — {$row['skin']}ID\nСтатус VIP — $vip";
 
     return $vk->sendMessage($peer_id, $info);
 }
