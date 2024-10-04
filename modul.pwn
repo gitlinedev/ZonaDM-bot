@@ -2,7 +2,7 @@
 
 //=============[ OnGameModeInit ]================
 SetTimer("VKActionTimer", TIME_TO_UPD, true);
-//=============================
+//=============================-=================
 
 callback: VKActionTimer()
 {
