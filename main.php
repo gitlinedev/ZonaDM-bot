@@ -349,7 +349,7 @@ function Leaders($peer_id, $db_global, $vk)
     return $vk->sendMessage($peer_id, $leaders_list);
 }
 //============================== [ INVITE / UNINVITE ] ================================\\
-/*if ($data->object->action->type == 'chat_invite_user' or $data->object->action->type == 'chat_invite_user_by_link') 
+if ($data->object->action->type == 'chat_invite_user' or $data->object->action->type == 'chat_invite_user_by_link') 
 {
     $chat = $data->object->action;
     $chat_data = $vk->request('messages.getConversationsById', ['peer_ids' => $peer_id, 'extended' => 0]);
@@ -359,12 +359,12 @@ function Leaders($peer_id, $db_global, $vk)
     $id = $chat->member_id;
     $userInfo = $vk->request("users.get", ["user_ids" => $id]);
 
-    if($peer_id == 2000000007 or $peer_id == 2000000004) 
+    if($peer_id == ADMIN_CHAT) 
     {
-        $checl_sql = $db_global->query("SELECT * FROM accounts WHERE VkontakteID = '{$id}'");
+        $checl_sql = $db_global->query("SELECT * FROM accounts WHERE vk = '{$id}'");
         $row = $checl_sql->fetch_assoc();
 
-        if($row && $row[Admin] >= 1) 
+        if($row && $row['Admin'] >= 1) 
         {
             switch ($row['Admin']) {
                 case 0:
@@ -414,7 +414,7 @@ function Leaders($peer_id, $db_global, $vk)
             $vk->request('messages.removeChatUser', ['chat_id' => $chat_id, 'member_id' => $id]);
         }
     }
-    else if($peer_id == 2000000005)
+    /*else if($peer_id == 2000000049)
     {
         $checl_sql = $db_global->query("SELECT * FROM accounts WHERE VkontakteID = '{$id}'");
         $row = $checl_sql->fetch_assoc();
@@ -474,6 +474,6 @@ function Leaders($peer_id, $db_global, $vk)
             
             $chat_id = $peer_id - 2000000000;
             $vk->request('messages.removeChatUser', ['chat_id' => $chat_id, 'member_id' => $id]);
-        }        
-    }
-}*/
+        }      
+    }*/
+}
