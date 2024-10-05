@@ -14,6 +14,7 @@ $vk = vk_api::create(VK_KEY, VERSION)->setConfirm(ACCESS_KEY);
 
 //=====================================[ Erorrs ]==================================================
 $permision = 403;
+$guard_status = 0;
 //=====================================[Buttons VK]==================================================
 $btn_1 = $vk->buttonText('Привязать аккаунт', 'blue', ['command' => 'btn_1']);
 
@@ -53,9 +54,9 @@ if ($data->type == 'message_new') // Check New Message
 	{
         $query = new SampQueryAPI('5.39.108.55', '1789'); 
         $serverInfo = $query->getInfo(); 
-
-        $vk->sendMessage($peer_id, "📊 Текущий онлайн сервера: {$serverInfo['players']} из 250 (1 мс)");
-	}
+        if($query->isOnline()) return $vk->sendMessage($peer_id, "📊 Текущий онлайн сервера: {$serverInfo['players']} из 250 (1 мс)");
+        else $vk->sendMessage($peer_id, "🌑 Серер выключен.");
+    }
     if($message == '/players' or $message == '/игроки')
 	{
         $query = new SampQueryAPI('5.39.108.55', '1789'); 
@@ -85,6 +86,7 @@ if ($data->type == 'message_new') // Check New Message
     if($params_message[0] == '/unadmin') return RemoveAdmin($vk_id, $peer_id, $params_message, $vk, $permision, $db_global);
     if($params_message[0] == '/logs') return PlayerLogs($peer_id, $params_message, $vk, $permision, $db_global);
     if($params_message[0] == '/giveadmin') return GiveAdmin($vk_id, $peer_id, $params_message, $vk, $permision, $db_global);
+    if($params_message[0] == '/kick') return KickUser($vk_id, $peer_id, $params_message, $vk, $permision, $db_global);
     //============================================================================================================================================\\
     if($peer_id == $vk_id) 
     {
@@ -105,6 +107,11 @@ if ($data->type == 'message_new') // Check New Message
 }
 
 //========================= [ FUNCTION ] =========================\\
+function KickUserFromChat($vk, $peer_id, $vk_id)
+{
+    $chat_id = $peer_id - 2000000000;
+    $vk->request('messages.removeChatUser', ['chat_id' => $chat_id, 'member_id' => $vk_id]);
+}
 function CheckAdmin($vk_id, $db_global, $type, $player = null)
 {
     if($type == 0)
@@ -147,6 +154,26 @@ function CheckValidAccount($db_global, $name)
 function SendActions($db_global, $action, $from, $player, $value, $reason = null)
 {
     $db_global->query("INSERT INTO `vk_actions`(`action`, `from`, `player`, `value`, `reason`, `date`) VALUES ('$action','$from','$player','$value','$reason', NOW())");
+}
+function KickUser($vk_id, $peer_id, $params_message, $vk, $permision, $db_global)
+{
+    $admin_lvl = CheckAdmin($vk_id, $db_global, 0);
+    
+    if($admin_lvl <= 0 or $admin_lvl < 4) return $vk->sendMessage($peer_id, "Произошла ошибка (#$permision)");    
+    if($params_message[1] == '') return $vk->sendMessage($peer_id, "Используйте: /kick @paveldurov");
+    
+    $kick_id = explode("|", mb_substr($params_message[1], 3))[0];
+
+    $userInfo = $vk->request("users.get", ["user_ids" => $kick_id]);
+    $kick_name = $userInfo[0]['first_name'];
+    $kick_lastname = $userInfo[0]['last_name'];
+
+    $userInfo = $vk->request("users.get", ["user_ids" => $vk_id]);
+    $kicker_name = $userInfo[0]['first_name'];
+    $kicker_lastname = $userInfo[0]['last_name'];
+
+    $vk->sendMessage($peer_id, "Администратор @id$vk_id($kicker_name $kicker_lastname) исключил из беседы @id$kick_id($kick_name $kick_lastname).");
+    KickUserFromChat($vk, $peer_id, $kick_id);
 }
 function GiveAdmin($vk_id, $peer_id, $params_message, $vk, $permision, $db_global)
 {
@@ -359,7 +386,7 @@ if ($data->object->action->type == 'chat_invite_user' or $data->object->action->
     $id = $chat->member_id;
     $userInfo = $vk->request("users.get", ["user_ids" => $id]);
 
-    if($peer_id == ADMIN_CHAT) 
+    if($peer_id == ADMIN_CHAT && $guard_status == 1) 
     {
         $checl_sql = $db_global->query("SELECT * FROM accounts WHERE vk = '{$id}'");
         $row = $checl_sql->fetch_assoc();
@@ -410,70 +437,7 @@ if ($data->object->action->type == 'chat_invite_user' or $data->object->action->
         {
             $vk->sendMessage($peer_id, "Внимание: пользователь @id$id({$userInfo[0]['first_name']}) не является администратором.");
             
-            $chat_id = $peer_id - 2000000000;
-            $vk->request('messages.removeChatUser', ['chat_id' => $chat_id, 'member_id' => $id]);
+            KickUserFromChat($vk, $peer_id, $id);
         }
     }
-    /*else if($peer_id == 2000000049)
-    {
-        $checl_sql = $db_global->query("SELECT * FROM accounts WHERE VkontakteID = '{$id}'");
-        $row = $checl_sql->fetch_assoc();
-
-        if($row)
-        {
-            switch ($row['member']) {
-                case 0:
-                    $org = "не состоите";
-                    break;
-                case 1:
-                    $org = "Правительство";
-                    break;
-                case 2:
-                    $org = "ВЧ";
-                    break;
-                case 3:
-                    $org = "МО МВД";
-                    break;
-                case 4:
-                    $org = "БЦРБ";
-                    break;
-                case 5:
-                    $org = "Скинхеды";
-                    break;
-                case 6:
-                    $org = "Гопота";
-                    break;
-                case 7:
-                    $org = "Кавказцы";
-                    break;
-                default:
-                    $org = "неизвестно";
-            }
-        }
-        if($row && $row[Admin] >= 1 or $row[rank] >= 10) 
-        {
-            if($row[Admin] >= 1) 
-            {
-                $vk->sendMessage($peer_id, "👋 » @id$id({$userInfo[0]['first_name']}), добро пожаловать.\n\nАдминистратор {$row['Name']}");
-            }
-            else 
-            {
-                $vk->sendMessage($peer_id, "{$row['Name']}, $org (Сервер #1)
-
-                Добро пожаловать, @id$id({$userInfo[0]['first_name']}). Ваши следующие действия:
-                1. Прочитать закрепленное сообщение, принять все установленные правила и узнать своего следящего.
-                2. Заполнить темы на форуме.
-                3. Привязать к своему игровому аккаунту Google Authenticator.
-                
-                Удачи!");
-            }
-        }
-        else 
-        {
-            $vk->sendMessage($peer_id, "Внимание: пользователь @id$id({$userInfo[0]['first_name']}) не является лидером.");
-            
-            $chat_id = $peer_id - 2000000000;
-            $vk->request('messages.removeChatUser', ['chat_id' => $chat_id, 'member_id' => $id]);
-        }      
-    }*/
 }
