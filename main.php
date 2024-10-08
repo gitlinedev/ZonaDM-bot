@@ -21,10 +21,10 @@ $btn_1 = $vk->buttonText('Привязать аккаунт', 'blue', ['command'
 $btn_2 = $vk->buttonText('Да', 'green', ['command' => 'btn_2']);
 $btn_3 = $vk->buttonText('Нет', 'red', ['command' => 'btn_3']);
 //============================================================================================
-$host_global = "164.132.206.179";
-$username_global = "gs272375";
-$password_global = "6rfBaTQDDs8P";
-$database_global = "gs272375";
+$host_global = "185.253.34.52";
+$username_global = "gs274241";
+$password_global = "im3gfnBGB0CB";
+$database_global = "gs274241";
 
 const ADMIN_CHAT = 2000000049;
 //=================== [ MYSQL CONNECT ] =========== \\
@@ -52,14 +52,14 @@ if ($data->type == 'message_new') // Check New Message
     //======================== [ CMD ] ======================\\
 	if($message == '/online' or $message == '/онлайн')
 	{
-        $query = new SampQueryAPI('5.39.108.55', '1789'); 
+        $query = new SampQueryAPI('185.253.34.52', '1149'); 
         $serverInfo = $query->getInfo(); 
         if($query->isOnline()) return $vk->sendMessage($peer_id, "📊 Текущий онлайн сервера: {$serverInfo['players']} из 250 (1 мс)");
         else $vk->sendMessage($peer_id, "🌑 Серер выключен.");
     }
     if($message == '/players' or $message == '/игроки')
 	{
-        $query = new SampQueryAPI('5.39.108.55', '1789'); 
+        $query = new SampQueryAPI('185.253.34.52', '1149'); 
         $aPlayers = $query->getDetailedPlayers(); 
         $serverInfo = $query->getInfo(); 
         
@@ -86,6 +86,7 @@ if ($data->type == 'message_new') // Check New Message
     if($params_message[0] == '/unadmin') return RemoveAdmin($vk_id, $peer_id, $params_message, $vk, $permision, $db_global);
     if($params_message[0] == '/logs') return PlayerLogs($peer_id, $params_message, $vk, $permision, $db_global);
     if($params_message[0] == '/giveadmin') return GiveAdmin($vk_id, $peer_id, $params_message, $vk, $permision, $db_global);
+    if($params_message[0] == '/skick') return KickPlayer($vk_id, $peer_id, $params_message, $vk, $permision, $db_global, $message);
     if($params_message[0] == '/kick') return KickUser($vk_id, $peer_id, $params_message, $vk, $permision, $db_global);
     //============================================================================================================================================\\
     if($peer_id == $vk_id) 
@@ -154,6 +155,37 @@ function CheckValidAccount($db_global, $name)
 function SendActions($db_global, $action, $from, $player, $value, $reason = null)
 {
     $db_global->query("INSERT INTO `vk_actions`(`action`, `from`, `player`, `value`, `reason`, `date`) VALUES ('$action','$from','$player','$value','$reason', NOW())");
+}
+function KickPlayer($vk_id, $peer_id, $params_message, $vk, $permision, $db_global, $message)
+{
+    $admin_lvl = CheckAdmin($vk_id, $db_global, 0);
+    
+    if($admin_lvl <= 0 or $admin_lvl < 4) return $vk->sendMessage($peer_id, "Произошла ошибка (#$permision)");    
+    if($params_message[1] == '') return $vk->sendMessage($peer_id, "Используйте: /skick Ivan_Ivanov [причина не обязательная]");
+
+    if(CheckValidAccount($db_global, $params_message[1]) == false) return $vk->sendMessage($peer_id, "Аккаунт не найден в базе данных."); 
+
+    $serach_sql = $db_global->query("SELECT connected FROM accounts WHERE name = '{$params_message[1]}'");
+    $status = $serach_sql->fetch_assoc()['connected'];
+
+    if(!$status) return $vk->sendMessage($peer_id, "Игрок не в сети."); 
+
+    $reason = mb_substr($message, 7+strlen($params_message[1]));
+
+    $value = 0;
+
+    if($reason == '') 
+    {
+        $vk->sendMessage($peer_id, "Игрок {$params_message[1]} был кикнут с сервера."); 
+    }
+    else
+    {
+        $vk->sendMessage($peer_id, "Игрок {$params_message[1]} был кикнут с сервера. Причина: $reason"); 
+        $value = 1;
+    }
+
+    SendActions($db_global, 3, $vk_id, $params_message[1], $value, $reason);
+
 }
 function KickUser($vk_id, $peer_id, $params_message, $vk, $permision, $db_global)
 {
