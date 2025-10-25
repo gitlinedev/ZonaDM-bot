@@ -6,9 +6,9 @@ require_once('vendor/autoload.php');
 use DigitalStar\vk_api\VK_api as vk_api; // vk_api
 
 //========================[ CONFIG ]========================//
-const VK_KEY     = "vk1.a.Cq55IcR7PGuUxPRq8TFGk8TigMghVhIEOMN7J1fu2My1G3B664iD9LwKQ7_gYKL0ilSSwsOiUR2wQobZXyABwKr1dRnr2gFEGoRBC6f058L84L3MqdKtmosGijCG5PXkIG3iaobpIVj2JlETXzkirsX2JbDM620c9ou27bXDdRAQi4oG3IPfRNroqZOKoc0E6ep9q9ErpfWu0i-fU0TOlw"; // Токен ВК
-const ACCESS_KEY = "75c5d435"; // Callback confirm
-const VERSION    = "5.131";     // Версия API VK
+const VK_KEY     = "vk1.a.Cq55IcR7PGuUxPRq8TFGk8TigMghVhIEOMN7J1fu2My1G3B664iD9LwKQ7_gYKL0ilSSwsOiUR2wQobZXyABwKr1dRnr2gFEGoRBC6f058L84L3MqdKtmosGijCG5PXkIG3iaobpIVj2JlETXzkirsX2JbDM620c9ou27bXDdRAQi4oG3IPfRNroqZOKoc0E6ep9q9ErpfWu0i-fU0TOlw";
+const ACCESS_KEY = "75c5d435"; 
+const VERSION    = "5.131"; 
 
 const ADMIN_CHAT = 2000000049;
 
